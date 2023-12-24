@@ -25,7 +25,8 @@ ADD php.ini /usr/local/etc/php
 
 
 COPY . /var/www
-
+ADD ./localDockerfiles/nginx/sites-available/default /etc/nginx/sites-available
+ADD ./localDockerfiles/nginx/index/index.php /var/www/public
 RUN ln -sf /dev/stdout /var/log/nginx/access.log
 
 

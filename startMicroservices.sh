@@ -2,9 +2,9 @@
 
 # Array of directories containing docker-compose.yml files
 directories=(
-    "./bookService"
+    # "./bookService"
     "./gatewayService"
-    "./socialService"
+    # "./socialService"
     "./userService"
     # Add more directories as needed
 )
@@ -21,7 +21,7 @@ read -r network_reply
 if [[ $network_reply =~ ^[Yy]$ ]]; then
     echo "==========================="
     echo "Creating a new network... ⚡️"
-    docker network create todo-network
+    docker network create book-network
     echo "New network 'mynetwork' created successfully! 🎉"
 fi
 

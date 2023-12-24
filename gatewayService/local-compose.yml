@@ -1,36 +1,39 @@
 version: "3"
 services:
   #PHP Service
- book-gateway:
+  book-gateway:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     image: digitalocean.com/php
     container_name: book-gateway
     restart: unless-stopped
     tty: true
     depends_on:
-      - book-gateway-db
+      - book-db
     environment:
       APP_KEY: base64:20KjR77mhPY0DjEziiRYR+U2FrWvZSHfX6MVcHaMhPg=
       SERVICE_NAME: book-gateway
       SERVICE_TAGS: dev
-      DB_HOST: book-gateway-db
+      DB_HOST: book-db
       DB_DATABASE: book-gateway-db
       DB_PASSWORD: passwd
       DB_PORT: "3306"
       DB_USERNAME: root
       APP_ENV: local
-      APP_URL: book-webserver-gatway
-      APP_DEBUG: "true"
-      APP_LOG_LEVEL: debug
       MS_AUTHORIZATION_URL: book-authorization-ms
       MS_book_URL: task-management-ms
+      APP_DEBUG: "true"
+      APP_LOG_LEVEL: debug
+      ACCEPTED_SECRETS: "secret1,secret2,secret3"
+      AUTHORS_SECRET : "gatwaySecret"
+
     ports:
-      - 6020:80
+      - 6021:80
     working_dir: /var/www
     volumes:
-      - ./dockerfiles/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./:/var/www
+      - ./localDockerfiles/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
       - book-network
     command: bash -c "
@@ -41,36 +44,22 @@ services:
        (nginx -t && nginx) &&  chown -R www-data:www-data   /var/www/storage/*  /var/www/bootstrap/cache &&
       php-fpm"
 
- book-gateway-db:
+  book-db:
     image: mysql:5.7.22
-    container_name: book-gateway-db
+    container_name: book-db
     restart: unless-stopped
     tty: true
     ports:
       - "33070:3306"
     environment:
-          MYSQL_DATABASE: book-gateway-db
-          MYSQL_ROOT_PASSWORD: "passwd"
-          SERVICE_TAGS: dev
-          SERVICE_NAME: mysql
-    volumes:
-    - dbdata:/var/www
+      MYSQL_ROOT_PASSWORD: "passwd"
 
+    volumes:
+      - ./localDockerfiles/provision/mysql/init:/docker-entrypoint-initdb.d
+      - dbdata:/var/www
     networks:
       - book-network
-  #Nginx Service
- book-webserver-gatway:
-    image: nginx:alpine
-    container_name: book-webserver-gatway
-    restart: unless-stopped
-    tty: true
-    ports:
-      - "3098:80"
-    volumes:
-      - ./:/var/www
-      - ./dockerfiles/nginx/conf.d/:/etc/nginx/conf.d/
-    networks:
-        - book-network
+
 #Docker Networks
 networks:
   book-network:
