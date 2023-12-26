@@ -1,83 +1,59 @@
 version: "3"
 services:
-  #PHP Service
- book-gateway:
+  gateway-microservice:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.local
     image: digitalocean.com/php
-    container_name: book-gateway
+    container_name: gateway-microservice
     restart: unless-stopped
     tty: true
-    depends_on:
-      - book-gateway-db
     environment:
-      APP_KEY: base64:20KjR77mhPY0DjEziiRYR+U2FrWvZSHfX6MVcHaMhPg=
-      SERVICE_NAME: book-gateway
-      SERVICE_TAGS: dev
-      DB_HOST: book-gateway-db
-      DB_DATABASE: book-gateway-db
-      DB_PASSWORD: passwd
-      DB_PORT: "3306"
-      DB_USERNAME: root
-      APP_ENV: local
-      APP_URL: book-webserver-gatway
-      APP_DEBUG: "true"
-      APP_LOG_LEVEL: debug
-      MS_AUTHORIZATION_URL: book-authorization-ms
-      MS_book_URL: task-management-ms
+        APP_NAME: gateway-microservice
     ports:
-      - 6020:80
+      - 8025:80  # Adjust the port as needed
     working_dir: /var/www
     volumes:
-      - ./dockerfiles/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./:/var/www
+      # Add other volume mappings if necessary
     networks:
-      - book-network
-    command: bash -c "
-      (composer install || true) &&
-      (php artisan migrate || true) &&
-      (php artisan config:cache || true) &&
-      (php artisan route:clear || true)  &&
-       (nginx -t && nginx) &&  chown -R www-data:www-data   /var/www/storage/*  /var/www/bootstrap/cache &&
-      php-fpm"
+      - user-network
 
- book-gateway-db:
+  gateway-database:
     image: mysql:5.7.22
-    container_name: book-gateway-db
+    container_name: gateway-database
     restart: unless-stopped
     tty: true
     ports:
-      - "33070:3306"
+      - "33078:3306"
     environment:
-          MYSQL_DATABASE: book-gateway-db
-          MYSQL_ROOT_PASSWORD: "passwd"
-          SERVICE_TAGS: dev
-          SERVICE_NAME: mysql
+      MYSQL_DATABASE: gateway-database
+      MYSQL_ROOT_PASSWORD: "password"  # Adjust as needed
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
     volumes:
-    - dbdata:/var/www
-
+      - dbdata-gateway:/var/lib/mysql
     networks:
-      - book-network
-  #Nginx Service
- book-webserver-gatway:
+      - user-network
+
+  gateway-webserver:
     image: nginx:alpine
-    container_name: book-webserver-gatway
+    container_name: gateway-webserver
     restart: unless-stopped
     tty: true
     ports:
-      - "3098:80"
+      - "3081:80"
     volumes:
       - ./:/var/www
       - ./dockerfiles/nginx/conf.d/:/etc/nginx/conf.d/
     networks:
-        - book-network
-#Docker Networks
+      - user-network
+
 networks:
-  book-network:
+  user-network:
     external: true
     driver: bridge
 
-#Volumes
 volumes:
-  dbdata:
+  dbdata-gateway:
     driver: local

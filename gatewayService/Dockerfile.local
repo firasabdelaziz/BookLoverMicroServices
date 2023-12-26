@@ -19,22 +19,16 @@ RUN apt-get update && \
     apt-get install -y libicu-dev && \
     docker-php-ext-install intl && \
     curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin/ --filename=composer && \
-    docker-php-ext-install bcmath
+    docker-php-ext-install bcmath && \
+    apt-get install -y supervisor
 
 ADD php.ini /usr/local/etc/php
 
 
 COPY . /var/www
-ADD ./localDockerfiles/nginx/sites-available/default /etc/nginx/sites-available
-ADD ./localDockerfiles/nginx/index/index.php /var/www/public
 RUN ln -sf /dev/stdout /var/log/nginx/access.log
 
 
 WORKDIR /var/www
 
-
-RUN chown -R www-data:www-data \
-  /var/www/storage \
-  /var/www/storage/* \
-  /var/www/bootstrap/cache \
 

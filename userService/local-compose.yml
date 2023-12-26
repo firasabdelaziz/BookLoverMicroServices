@@ -1,71 +1,56 @@
 version: "3"
 services:
-  #PHP Service
-  book-authorization-ms:
+  user-microservice:
     build:
       context: .
       dockerfile: Dockerfile.local
     image: digitalocean.com/php
-    container_name: book-authorization-ms
+    container_name: user-microservice
     restart: unless-stopped
     tty: true
     environment:
-      APP_NAME : book-authorization-ms
-      APP_KEY: base64:20KjR77mhPY0DjEziiRYR+U2FrWvZSHfX6MVcHaMhPg=
-      SERVICE_NAME: book-authorization-ms
-      SERVICE_TAGS: dev
-      DB_HOST: book-db
-      DB_DATABASE: book-authorization-db
-      DB_PASSWORD: passwd
-      DB_PORT: "3306"
-      DB_USERNAME: root
-      APP_ENV: local
-      APP_DEBUG: "true"
-      APP_LOG_LEVEL: debug
-      LOGIN_URL: book-authorization-ms
-      AUTHORIZATION_URL: /oauth/authorize
-      TOKEN_URL: /oauth/token
-      REFRESH_URL: /oauth/token/refresh
-      TOKEN_EXPIRY_HOURS: 3
-      ACCEPTED_SECRETS : "gatwaySecret,gatwaySecret1"
-      QUEUE_DRIVER: redis
-      QUEUE_CONNECTION: redis
-      TASK_MANAGAMENT_MS_REDIS_HOST: redis
-      REDIS_CLIENT: predis
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-      BROADCAST_DRIVER : redis
-      MAIL_MAILER : smtp
-      MAIL_HOST : sandbox.smtp.mailtrap.io
-      MAIL_PORT : 2525
-      MAIL_USERNAME: 1b98c7e3c5f851
-      MAIL_PASSWORD: c234e6db71df88
-      MAIL_ENCRYPTION :
+        APP_NAME: user-microservice
     ports:
-      - 6023:80
+      - 8024:80  # Adjust the port as needed
     working_dir: /var/www
     volumes:
       - ./:/var/www
-      - ./localDockerfiles/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      # Add other volume mappings if necessary
     networks:
-      - book-network
-    command: bash -c "
-      (composer install || true) &&
-      (php artisan migrate --seed || true) &&
-      (php artisan config:cache || true) &&
-      (php artisan route:clear || true)  &&
-      (nginx -t && nginx) &&  chown -R www-data:www-data   /var/www/storage/*  /var/www/bootstrap/cache  &&  chmod +x /var/www/start-supervisor.sh &&
-       ./start-supervisor.sh &&  php-fpm"
-
-
-
-#Docker Networks
+      - user-network
+  user-db:
+    image: mysql:5.7.22
+    container_name: user-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "33077:3306"
+    environment:
+          MYSQL_DATABASE: user-db
+          MYSQL_ROOT_PASSWORD: "passwd"
+          SERVICE_TAGS: dev
+          SERVICE_NAME: mysql
+    volumes:
+      - dbdata-user:/var/www
+    networks:
+      - user-network
+  user-webserver:
+    image: nginx:alpine
+    container_name: book-webserver-authorization
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3080:80"
+    volumes:
+      - ./:/var/www
+      - ./dockerfiles/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+        - user-network
 networks:
-  book-network:
+  user-network:
     external: true
     driver: bridge
 
-#Volumes
 volumes:
-  dbdata:
+  dbdata-user:
     driver: local

@@ -2,9 +2,9 @@
 
 # Array of directories containing microservices
 directories=(
-   #  "./bookService"
+    "./bookService"
     "./gatewayService"
-   #  "./socialService"
+    "./socialService"
     "./userService"
     # Add more directories as needed
 )
